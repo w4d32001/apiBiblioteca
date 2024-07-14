@@ -21,6 +21,8 @@ return new class extends Migration
             $table->integer('stock');
             $table->unsignedBigInteger('category_id');
             $table->timestamps();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
         });
     }
 
