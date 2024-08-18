@@ -18,6 +18,23 @@ class Handler extends ExceptionHandler
         'password_confirmation',
     ];
 
+    protected function convertValidationExceptionToResponse(\Illuminate\Validation\ValidationException $e, $request)
+    {
+        if($e->response)
+        {
+             return $e->response;
+        }
+        return $this->invalidJson($request, $e);
+    }
+
+    public function invalidJson($request, \Illuminate\Validation\ValidationException $exception)
+    {
+        return response()->json([
+            'message'=> $exception->getMessage(),
+            'errors' => $exception->errors(),
+        ], $exception->status);
+    }
+
     /**
      * Register the exception handling callbacks for the application.
      */
