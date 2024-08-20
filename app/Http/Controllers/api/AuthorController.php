@@ -5,20 +5,25 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\helpers\BaseController;
 use App\Http\Requests\Author\StoreRequest;
 use App\Http\Requests\Author\UpdateRequest;
+use App\Http\Resources\AuthorResource;
 use App\Models\Author;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 
 class AuthorController extends BaseController
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         try{
-            $authors = Author::all();
-            return $this->sendResponse($authors, 'Lista de Autores');
+            $authors = Author::with('editor', 'creator')->get();
+            return $this->sendResponse(AuthorResource::collection($authors), 'Lista de Autores');
         }catch(Exception $e){
             return $this->sendError($e->getMessage());
         }
