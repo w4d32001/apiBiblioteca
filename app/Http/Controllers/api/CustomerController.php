@@ -11,7 +11,43 @@ use Illuminate\Support\Facades\Hash;
 
 class CustomerController extends BaseController
 {
-    public function index()
+    public function index()<?php
+
+    namespace App\Models;
+    
+    use Illuminate\Foundation\Auth\User as Authenticatable;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Relations\HasMany;
+    use Tymon\JWTAuth\Contracts\JWTSubject;
+    
+    class Customer extends Authenticatable implements JWTSubject
+    {
+        use HasFactory;
+    
+        protected $fillable = [
+            'name',
+            'email',
+            'password',
+            'image',
+            'address'
+        ];
+        public function getJWTIdentifier()
+        {
+            return $this->getKey();
+        }
+    
+        public function getJWTCustomClaims()
+        {
+            return [];
+        }
+    
+        public function sales():HasMany
+        {
+            return $this->hasMany(Sale::class);
+        }
+    
+        
+    }
     {
         $customers = Customer::all();
         return $this->sendResponse($customers, "Lista de clientes");
