@@ -1,121 +1,61 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Models;
 
-use App\Http\Controllers\helpers\BaseController;
-use App\Http\Requests\Book\StoreRequest;
-use App\Http\Requests\Book\UpdateRequest;
-use App\Http\Requests\Company\ImgRequest;
-use App\Http\Resources\BookResource;
-use App\Models\Book;
-use Exception;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use App\Traits\Audit;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-
-class BookController extends BaseController
+class Book extends Model
 {
+    use HasFactory;
+    use Audit;
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    protected $fillable = [
+        'name',
+        'isbm',
+        'price',
+        'publication_date',
+        'description',
+        'image',
+        'pdf',
+        'category_id',
+        'author_id',
+        'status',
+        'created_by',
+        'updated_by'
+    ];
+
+    protected static function boot()
     {
-        try {
-            $books = Book::with('editor', 'creator')->get();
-            return $this->sendResponse(BookResource::collection($books), 'Listo de categorías');
-        } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
-        }
+        parent::boot();
+        static::bootAudit();
+    }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreRequest $request)
+    public function editor()
     {
-        try {
-            $validated = $request->validated();
-            $validated['created_by'] = Auth::id();
-            $validated['updated_by'] = $validated['created_by'];
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('public/images');
-                $imageUrl = Storage::url($path);
-                $baseUrl = url('/');
-                $validated['image'] = $baseUrl . $imageUrl;
-            }
-            if ($request->hasFile('pdf')) {
-                $pdfPath = $request->file('pdf')->storeAs('public/files', $request->file('pdf')->getClientOriginalName());
-                $validated['pdf'] = $pdfPath;
-            }
-
-            $book = Book::create($validated);
-            return $this->sendResponse($book, 'Libro creado exitosamente', 'success', 201);
-        } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
-        }
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Book $book)
+    public function category():BelongsTo
     {
-        try {
-            return $this->sendResponse($book, 'Libro encontrado exitosamente');
-        } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
-        }
+        return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function updateBook(UpdateRequest $request, Book $book)
+    public function author():BelongsTo
     {
-        try {
-            $validated = $request->validated();
-            $validated['updated_by'] = Auth::id();
-            $book->update($validated);
-            return $this->sendResponse($book, 'Libro actualizado exitosamente');
-        } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
-        }
+        return $this->belongsTo(Author::class);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Book $book)
+    public function sales():HasMany
     {
-        try {
-            $book->delete();
-            return $this->sendResponse([], 'Libro eliminado exitosamente');
-        } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
-        }
+        return $this->hasMany(Sale::class);
     }
 
-    public function updateImage(ImgRequest $request, Book $book)
-    {
-
-        $validated = $request->validated();
-
-        try {
-            if ($request->hasFile('image')) {
-
-                $path = $request->file('image')->store('public/images');
-                $imageUrl = Storage::url($path);
-                $baseUrl = url('/');
-                $validated['image'] = $baseUrl . $imageUrl;
-
-                $book->update(['image' => $validated['image']]);
-                return $this->sendResponse($book, 'Imagen actualizada exitosamente');
-            } else {
-                return $this->sendError('No se encontró la imagen en la solicitud.');
-            }
-        } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
-        }
-    }
 }
