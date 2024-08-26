@@ -2,32 +2,29 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\helpers\BaseController;
 use App\Http\Requests\Book\StoreRequest;
 use App\Http\Requests\Book\UpdateRequest;
-use App\Http\Resources\AuthorResource;
+use App\Http\Requests\Company\ImgRequest;
 use App\Http\Resources\BookResource;
-use App\Models\Author;
 use App\Models\Book;
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
 
 class BookController extends BaseController
 {
-    public function __construct()
-    {
-        $this->middleware('auth:api');
-    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        try{
+        try {
             $books = Book::with('editor', 'creator')->get();
             return $this->sendResponse(BookResource::collection($books), 'Listo de categorías');
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
@@ -37,14 +34,24 @@ class BookController extends BaseController
      */
     public function store(StoreRequest $request)
     {
-        try{
+        try {
             $validated = $request->validated();
             $validated['created_by'] = Auth::id();
             $validated['updated_by'] = $validated['created_by'];
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('public/images');
+                $imageUrl = Storage::url($path);
+                $baseUrl = url('/');
+                $validated['image'] = $baseUrl . $imageUrl;
+            }
+            if ($request->hasFile('pdf')) {
+                $pdfPath = $request->file('pdf')->storeAs('public/files', $request->file('pdf')->getClientOriginalName());
+                $validated['pdf'] = $pdfPath;
+            }
+
             $book = Book::create($validated);
             return $this->sendResponse($book, 'Libro creado exitosamente', 'success', 201);
-
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
@@ -54,9 +61,9 @@ class BookController extends BaseController
      */
     public function show(Book $book)
     {
-        try{
+        try {
             return $this->sendResponse($book, 'Libro encontrado exitosamente');
-        }catch(Exception $e){
+        } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
@@ -64,7 +71,7 @@ class BookController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateRequest $request, Author $book)
+    public function updateBook(UpdateRequest $request, Book $book)
     {
         try {
             $validated = $request->validated();
@@ -73,29 +80,42 @@ class BookController extends BaseController
             return $this->sendResponse($book, 'Libro actualizado exitosamente');
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
-        }     
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Author $author)
+    public function destroy(Book $book)
     {
-        try
-        {
-            if($author->books()->exists())
-            {
-                return $this->sendError('Este dato tiene otro dato asociado, no se puede eliminar');
-            }
-            else{
-                $author->delete();
-                return $this->sendResponse([], 'Categoria eliminada exitosamente');
-            }
-        }
-        catch(Exception $e)
-        {
+        try {
+            $book->delete();
+            return $this->sendResponse([], 'Libro eliminado exitosamente');
+        } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
-        
+    }
+
+    public function updateImage(ImgRequest $request, Book $book)
+    {
+
+        $validated = $request->validated();
+
+        try {
+            if ($request->hasFile('image')) {
+
+                $path = $request->file('image')->store('public/images');
+                $imageUrl = Storage::url($path);
+                $baseUrl = url('/');
+                $validated['image'] = $baseUrl . $imageUrl;
+
+                $book->update(['image' => $validated['image']]);
+                return $this->sendResponse($book, 'Imagen actualizada exitosamente');
+            } else {
+                return $this->sendError('No se encontró la imagen en la solicitud.');
+            }
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
     }
 }
