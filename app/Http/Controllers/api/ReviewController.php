@@ -1,11 +1,30 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Models;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ReviewController extends Controller
+class Review extends Model
 {
-    //
+    use HasFactory;
+
+    protected $fillable = [
+        'customer_id',
+        'book_id',
+        'calification',
+        'comment'
+    ];
+
+    public function book(): BelongsTo
+    {
+        return $this->belongsTo(Book::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
 }
