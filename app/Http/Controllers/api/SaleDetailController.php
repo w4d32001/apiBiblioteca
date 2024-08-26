@@ -1,11 +1,24 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Models;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class SaleDetailController extends Controller
+class SaleDetail extends Model
 {
-    //
+    use HasFactory;
+
+    protected $fillable = [
+        'sale_id',
+        'book_id',
+        'total'
+    ];
+
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class);
+    }
+
 }
