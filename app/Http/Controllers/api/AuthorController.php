@@ -1,98 +1,42 @@
 <?php
 
-namespace App\Http\Controllers\api;
+namespace App\Models;
 
-use App\Http\Controllers\helpers\BaseController;
-use App\Http\Requests\Author\StoreRequest;
-use App\Http\Requests\Author\UpdateRequest;
-use App\Http\Resources\AuthorResource;
-use App\Models\Author;
-use Exception;
-use Illuminate\Support\Facades\Auth;
+use App\Traits\Audit;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class AuthorController extends BaseController
+class Author extends Model
 {
-    public function __construct()
-    {
-        $this->middleware('auth:api');
-    }
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        try{
-            $authors = Author::with('editor', 'creator')->get();
-            return $this->sendResponse(AuthorResource::collection($authors), 'Lista de Autores');
-        }catch(Exception $e){
-            return $this->sendError($e->getMessage());
-        }
-    }
+    use HasFactory;
+    use Audit;
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreRequest $request)
-    {
-        try{
-            $validated = $request->validated();
-            $validated['created_by'] = Auth::id();
-            $validated['updated_by'] = Auth::id();
-            $author = Author::create($validated);
-            
-            return $this->sendResponse($author, 'Autor creado exitosamente', 'success', 201);
+    protected $fillable = [
+        'name',
+        'biography',
+        'birth_date',
+        'created_by',
+        'updated_by'
+    ];
 
-        }catch(Exception $e){
-            return $this->sendError($e->getMessage());
-        }
+    protected static function boot()
+    {
+        parent::boot();
+        static::bootAudit();
+    }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Author $author)
+    public function editor()
     {
-        try{
-            return $this->sendResponse($author, 'Autor encontrado exitosamente');
-        }catch(Exception $e){
-            return $this->sendError($e->getMessage());
-        }
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateRequest $request, Author $author)
+    public  function books(): HasMany
     {
-        try {
-            $validated = $request->validated();
-            $validated['updated_by'] = Auth::id();
-            $author->update($validated);
-            return $this->sendResponse($author, 'Autor actualizado exitosamente');
-        } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
-        }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Author $author)
-    {
-        try
-        {
-            if($author->books()->exists())
-            {
-                return $this->sendError('Este dato tiene otro dato asociado, no se puede eliminar');
-            }
-            else{
-                $author->delete();
-                return $this->sendResponse([], 'Autor eliminado exitosamente');
-            }
-        }
-        catch(Exception $e)
-        {
-            return $this->sendError($e->getMessage());
-        }
+        return $this->hasMany(Book::class);
     }
 }
