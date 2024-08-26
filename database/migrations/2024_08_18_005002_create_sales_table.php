@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('client_id');
+            $table->unsignedBigInteger('customer_id');
+            $table->unsignedBigInteger('book_id');
             $table->decimal('total', 10,2);
             $table->timestamps();
         });

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->date('publication_date');
             $table->longText('description');
             $table->longText('image');
+            $table->longText('pdf');
             $table->unsignedBigInteger('author_id');
             $table->unsignedBigInteger('category_id');
             $table->unsignedBigInteger('created_by')->nullable();
